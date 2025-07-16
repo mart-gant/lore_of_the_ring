@@ -1,6 +1,7 @@
-
 import 'package:flutter/material.dart';
-import '../../../data/datasources/question_service.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/quiz_viewmodel.dart';
+
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
@@ -10,88 +11,57 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  final QuestionService _questionService = QuestionService();
-  List<Question> _questions = [];
-  int _currentIndex = 0;
-  int _correctAnswers = 0;
-  int? _selectedIndex;
-  bool _isFinished = false;
+  late final QuizViewModel _quizVM;
+  String? _selectedAnswer;
 
   @override
   void initState() {
     super.initState();
-    _loadQuestions();
+    _quizVM = context.read<QuizViewModel>();
+    _quizVM.loadNextQuestion();
   }
 
-  Future<void> _loadQuestions() async {
-    final questions = await _questionService.fetchQuestions();
-    setState(() => _questions = questions);
-  }
+  Future<void> _submitAnswer() async {
+    if (_selectedAnswer == null) return;
 
-  void _submitAnswer() {
-    if (_selectedIndex == _questions[_currentIndex].correctIndex) {
-      _correctAnswers++;
-    }
-    if (_currentIndex < _questions.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _selectedIndex = null;
-      });
-    } else {
-      setState(() => _isFinished = true);
-    }
+    final isCorrect = await _quizVM.submitAnswer(_selectedAnswer!);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isCorrect ? 'Dobrze!' : 'Źle!'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+
+    _quizVM.loadNextQuestion();
+    setState(() => _selectedAnswer = null);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_questions.isEmpty) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (_isFinished) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Wynik')),
-        body: Center(
-          child: Text('Twój wynik: $_correctAnswers / ${_questions.length}'),
-        ),
-      );
-    }
-
-    final question = _questions[_currentIndex];
+    final question = _quizVM.currentQuestion;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Pytanie ${_currentIndex + 1}/${_questions.length}'),
-      ),
+      appBar: AppBar(title: const Text('Quiz')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LinearProgressIndicator(
-              value: (_currentIndex + 1) / _questions.length,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              question.text,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text('Kategoria: ${question.category} | Trudność: ${question.difficulty}'),
-            const SizedBox(height: 12),
-            ...List.generate(question.options.length, (i) {
-              return RadioListTile<int>(
-                title: Text(question.options[i]),
-                value: i,
-                groupValue: _selectedIndex,
-                onChanged: (value) => setState(() => _selectedIndex = value),
-              );
-            }),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _selectedIndex == null ? null : _submitAnswer,
-              child: const Text('Dalej'),
-            ),
+            Text(question!.text, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 24),
+            ...question.answers.map((answer) => RadioListTile<String>(
+              title: Text(answer),
+              value: answer,
+              groupValue: _selectedAnswer,
+              onChanged: (value) => setState(() => _selectedAnswer = value),
+            )),
+            const SizedBox(height: 24),
+            ElevatedButton(onPressed: _submitAnswer, child: const Text('Zatwierdź')),
           ],
         ),
       ),
