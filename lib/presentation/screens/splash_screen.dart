@@ -1,8 +1,10 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../viewmodels/auth_viewmodel.dart';
-
+import 'package:lore_of_the_ring/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:lore_of_the_ring/presentation/screens/login_screen.dart';
+import 'package:lore_of_the_ring/presentation/screens/quiz_screen.dart';
+import 'package:lore_of_the_ring/presentation/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,31 +14,56 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  late final AuthViewModel _authVM;
-
   @override
   void initState() {
     super.initState();
-    _authVM = context.read<AuthViewModel>();
-    _checkAuth();
-  }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authViewModel = context.read<AuthViewModel>();
 
-  Future<void> _checkAuth() async {
-    final isLoggedIn = await _authVM.isLoggedIn();
+      // Listen to auth changes
+      authViewModel.addListener(() {
+        if (authViewModel.isLoggedIn) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const QuizScreen()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
+      });
 
-    if (!mounted) return;
-
-    if (isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/quiz');
-    } else {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+      // Initial check
+      Future.delayed(const Duration(seconds: 2), () {
+        if (authViewModel.isLoggedIn) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const QuizScreen()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/background.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.gondorGold),
+          ),
+        ),
+      ),
     );
   }
 }

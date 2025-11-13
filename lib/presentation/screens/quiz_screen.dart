@@ -1,70 +1,135 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/quiz_viewmodel.dart';
+import 'package:lore_of_the_ring/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:lore_of_the_ring/presentation/viewmodels/quiz_viewmodel.dart';
+import 'package:lore_of_the_ring/presentation/theme/app_theme.dart';
+import 'package:lore_of_the_ring/presentation/screens/leaderboard_screen.dart';
 
-
-class QuizScreen extends StatefulWidget {
+class QuizScreen extends StatelessWidget {
   const QuizScreen({super.key});
 
   @override
-  State<QuizScreen> createState() => _QuizScreenState();
-}
-
-class _QuizScreenState extends State<QuizScreen> {
-  late final QuizViewModel _quizVM;
-  String? _selectedAnswer;
-
-  @override
-  void initState() {
-    super.initState();
-    _quizVM = context.read<QuizViewModel>();
-    _quizVM.loadNextQuestion();
-  }
-
-  Future<void> _submitAnswer() async {
-    if (_selectedAnswer == null) return;
-
-    final isCorrect = await _quizVM.submitAnswer(_selectedAnswer!);
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(isCorrect ? 'Dobrze!' : 'Źle!'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-
-    _quizVM.loadNextQuestion();
-    setState(() => _selectedAnswer = null);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final question = _quizVM.currentQuestion;
+    final quizViewModel = context.watch<QuizViewModel>();
+    final authViewModel = context.read<AuthViewModel>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quiz')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(question!.text, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 24),
-            ...question.answers.map((answer) => RadioListTile<String>(
-              title: Text(answer),
-              value: answer,
-              groupValue: _selectedAnswer,
-              onChanged: (value) => setState(() => _selectedAnswer = value),
-            )),
-            const SizedBox(height: 24),
-            ElevatedButton(onPressed: _submitAnswer, child: const Text('Zatwierdź')),
-          ],
+      appBar: AppBar(
+        title: const Text('Quiz'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => authViewModel.signOut(),
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/background.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: _buildQuizContent(context, quizViewModel),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildQuizContent(BuildContext context, QuizViewModel viewModel) {
+    if (viewModel.quizFinished) {
+      return _buildResultScreen(context, viewModel);
+    }
+
+    if (viewModel.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.gondorGold),
+        ),
+      );
+    }
+
+    return _buildQuestionScreen(context, viewModel);
+  }
+
+  Widget _buildResultScreen(BuildContext context, QuizViewModel viewModel) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Ukończyłeś Quiz!',
+            style: textTheme.headlineMedium?.copyWith(color: AppTheme.darkWood),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Twój wynik: ${viewModel.score} / ${viewModel.questions.length}',
+            style: textTheme.titleLarge?.copyWith(color: AppTheme.darkWood),
+          ),
+          const SizedBox(height: 48),
+          ElevatedButton(
+            onPressed: () => viewModel.resetQuiz(),
+            child: const Text('Zagraj Ponownie'),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+              );
+            },
+            child: const Text('Zobacz Ranking'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionScreen(BuildContext context, QuizViewModel viewModel) {
+    final textTheme = Theme.of(context).textTheme;
+    final question = viewModel.questions[viewModel.currentQuestionIndex];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Pytanie ${viewModel.currentQuestionIndex + 1}/${viewModel.questions.length}',
+          style: textTheme.titleMedium?.copyWith(color: AppTheme.gondorGold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: AppTheme.parchment.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.darkWood.withOpacity(0.5)),
+          ),
+          child: Text(
+            question.questionText,
+            style: textTheme.headlineSmall?.copyWith(color: AppTheme.darkWood),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 32),
+        ...question.options.map((option) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ElevatedButton(
+              onPressed: () => viewModel.submitAnswer(option),
+              child: Text(option),
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 }

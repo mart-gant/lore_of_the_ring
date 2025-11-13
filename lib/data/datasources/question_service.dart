@@ -1,41 +1,26 @@
 
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lore_of_the_ring/domain/models/question.dart';
+import 'package:lore_of_the_ring/services/supabase_service.dart';
 
 class QuestionService {
-  final SupabaseClient client = Supabase.instance.client;
+  final SupabaseService _supabaseService;
 
-  Future<List<Question>> fetchQuestions() async {
-    final response = await client.from('questions').select();
-    final data = List<Map<String, dynamic>>.from(response);
-    return data.map((item) => Question.fromMap(item)).toList();
-  }
-}
+  QuestionService(this._supabaseService);
 
-class Question {
-  final String id;
-  final String text;
-  final List<String> options;
-  final int correctIndex;
-  final String category;
-  final String difficulty;
+  Future<List<Question>> getQuestions() async {
+    try {
+      final response = await _supabaseService.client.from('questions').select();
 
-  Question({
-    required this.id,
-    required this.text,
-    required this.options,
-    required this.correctIndex,
-    required this.category,
-    required this.difficulty,
-  });
-
-  factory Question.fromMap(Map<String, dynamic> map) {
-    return Question(
-      id: map['id'].toString(),
-      text: map['text'] ?? '',
-      options: List<String>.from(map['options']),
-      correctIndex: map['correctIndex'],
-      category: map['category'] ?? '',
-      difficulty: map['difficulty'] ?? '',
-    );
+      if (response.isEmpty) {
+        return [];
+      }
+      
+      final questions = response.map((json) => Question.fromJson(json)).toList();
+      return questions;
+    } catch (e) {
+      // You might want to handle errors more gracefully
+      print('Error fetching questions: $e');
+      return [];
+    }
   }
 }

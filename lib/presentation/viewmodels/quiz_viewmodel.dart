@@ -1,34 +1,68 @@
+
 import 'package:flutter/material.dart';
-import '../../domain/models/question.dart';
-import '../../services/supabase_service.dart';
+import 'package:lore_of_the_ring/data/datasources/score_service.dart';
+import 'package:lore_of_the_ring/domain/models/question.dart';
+import 'package:lore_of_the_ring/domain/usecases/get_questions_usecase.dart';
+import 'package:lore_of_the_ring/presentation/viewmodels/auth_viewmodel.dart';
 
 class QuizViewModel extends ChangeNotifier {
-  final _supabase = SupabaseService();
-  final List<Question> _questions = [];
-  int _currentIndex = 0;
+  final GetQuestionsUseCase _getQuestionsUseCase;
+  final ScoreService _scoreService;
+  final AuthViewModel _authViewModel; // To get the user ID
 
-  Question? get currentQuestion => (_currentIndex < _questions.length) ? _questions[_currentIndex] : null;
+  QuizViewModel(
+      this._getQuestionsUseCase, this._scoreService, this._authViewModel) {
+    _loadQuestions();
+  }
 
-  void loadNextQuestion() async {
-    if (_questions.isEmpty) {
-      final data = await _supabase.getQuestions();
-      _questions.addAll(data.map((q) => Question.fromMap(q)));
-    }
+  List<Question> _questions = [];
+  int _currentQuestionIndex = 0;
+  int _score = 0;
+  bool _quizFinished = false;
+  bool get isLoading => _questions.isEmpty && !_quizFinished;
 
-    if (_currentIndex + 1 < _questions.length) {
-      _currentIndex++;
-    } else {
-      _currentIndex = 0;
-    }
+  List<Question> get questions => _questions;
+  int get currentQuestionIndex => _currentQuestionIndex;
+  int get score => _score;
+  bool get quizFinished => _quizFinished;
+
+  Future<void> _loadQuestions() async {
+    // Reset state before loading new questions
+    _questions = [];
+    _currentQuestionIndex = 0;
+    _score = 0;
+    _quizFinished = false;
+    // Notify listeners to show a loading indicator
+    notifyListeners();
+
+    _questions = await _getQuestionsUseCase();
     notifyListeners();
   }
 
-  Future<bool> submitAnswer(String answer) async {
-    final question = currentQuestion;
-    final correct = question?.correctAnswer == answer;
-    if (question != null) {
-      await _supabase.submitAnswer(question.text, answer, correct);
+  void submitAnswer(String answer) {
+    if (_quizFinished) return;
+
+    if (_questions[_currentQuestionIndex].correctAnswer == answer) {
+      _score++;
     }
-    return correct;
+
+    if (_currentQuestionIndex < _questions.length - 1) {
+      _currentQuestionIndex++;
+    } else {
+      _quizFinished = true;
+      _saveCurrentScore();
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> _saveCurrentScore() async {
+    if (_authViewModel.isLoggedIn) {
+      await _scoreService.saveScore(_score, _authViewModel.user!.id);
+    }
+  }
+
+  void resetQuiz() {
+    _loadQuestions();
   }
 }

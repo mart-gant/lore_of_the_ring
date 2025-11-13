@@ -1,23 +1,22 @@
+
 import 'package:flutter/material.dart';
-import 'package:lore_of_the_ring/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:lore_of_the_ring/presentation/viewmodels/leaderboard_viewmodel.dart';
-import 'package:lore_of_the_ring/presentation/viewmodels/quiz_viewmodel.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lore_of_the_ring/data/datasources/question_service.dart';
+import 'package:lore_of_the_ring/data/repositories/question_repository_impl.dart';
+import 'package:lore_of_the_ring/domain/repositories/question_repository.dart';
+import 'package:lore_of_the_ring/domain/usecases/get_questions_usecase.dart';
+import 'package:lore_of_the_ring/presentation/screens/splash_screen.dart';
+import 'package:lore_of_the_ring/presentation/viewmodels/quiz_viewmodel.dart';
+import 'package:lore_of_the_ring/services/supabase_service.dart';
+import 'package:lore_of_the_ring/presentation/theme/app_theme.dart';
+import 'package:lore_of_the_ring/services/auth_service.dart';
+import 'package:lore_of_the_ring/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:lore_of_the_ring/data/datasources/score_service.dart';
+import 'package:lore_of_the_ring/presentation/viewmodels/leaderboard_viewmodel.dart';
 
-import 'presentation/screens/leaderboard_screen.dart';
-import 'presentation/screens/quiz_screen.dart';
-import 'presentation/screens/login_screen.dart';
-import 'presentation/screens/splash_screen.dart';
-
-
-
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: 'https://your-project.supabase.co',
-    anonKey: 'your-anon-key',
-  );
+  await SupabaseService.initialize();
   runApp(const MyApp());
 }
 
@@ -28,23 +27,49 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => LeaderboardViewModel()),
-        ChangeNotifierProvider(create: (_) => QuizViewModel()),
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        // Services
+        Provider<SupabaseService>(
+          create: (_) => SupabaseService(),
+        ),
+        Provider<QuestionService>(
+          create: (context) => QuestionService(context.read<SupabaseService>()),
+        ),
+        Provider<AuthService>(
+          create: (_) => AuthService(),
+        ),
+        Provider<ScoreService>(
+          create: (_) => ScoreService(),
+        ),
+        
+        // Repositories
+        Provider<QuestionRepository>(
+          create: (context) => QuestionRepositoryImpl(context.read<QuestionService>()),
+        ),
+        
+        // Use Cases
+        Provider<GetQuestionsUseCase>(
+          create: (context) => GetQuestionsUseCase(context.read<QuestionRepository>()),
+        ),
+
+        // View Models
+        ChangeNotifierProvider<AuthViewModel>(
+          create: (context) => AuthViewModel(context.read<AuthService>()),
+        ),
+        ChangeNotifierProvider<QuizViewModel>(
+          create: (context) => QuizViewModel(
+            context.read<GetQuestionsUseCase>(),
+            context.read<ScoreService>(),
+            context.read<AuthViewModel>(),
+          ),
+        ),
+        ChangeNotifierProvider<LeaderboardViewModel>(
+          create: (context) => LeaderboardViewModel(context.read<ScoreService>()),
+        ),
       ],
       child: MaterialApp(
         title: 'Lore of the Ring',
-        theme: ThemeData(
-          primarySwatch: Colors.brown,
-          scaffoldBackgroundColor: Colors.white,
-        ),
-        initialRoute: '/',
-        routes: {
-          '/': (_) => const SplashScreen(),
-          '/login': (_) => const LoginScreen(),
-          '/quiz': (_) => const QuizScreen(),
-          '/leaderboard': (_) => const LeaderboardScreen(),
-        },
+        theme: AppTheme.theme,
+        home: const SplashScreen(),
       ),
     );
   }

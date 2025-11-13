@@ -1,40 +1,28 @@
+
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-class LeaderboardEntry {
-  final String username;
-  final int correctAnswers;
-
-  LeaderboardEntry({
-    required this.username,
-    required this.correctAnswers,
-  });
-
-  factory LeaderboardEntry.fromMap(Map<String, dynamic> map) {
-    return LeaderboardEntry(
-      username: map['username'] ?? 'Nieznany',
-      correctAnswers: map['correct_answers'] ?? 0,
-    );
-  }
-}
+import 'package:lore_of_the_ring/domain/entities/score.dart';
+import 'package:lore_of_the_ring/data/datasources/score_service.dart';
 
 class LeaderboardViewModel extends ChangeNotifier {
-  final SupabaseClient client = Supabase.instance.client;
+  final ScoreService _scoreService;
 
-  List<LeaderboardEntry> _entries = [];
-  List<LeaderboardEntry> get entries => _entries;
+  LeaderboardViewModel(this._scoreService) {
+    fetchLeaderboard();
+  }
 
-  Future<void> loadLeaderboard() async {
-    // Wywołanie RPC bez select()
-    final data = await client.rpc('get_leaderboard');
+  List<Score> _scores = [];
+  bool _isLoading = false;
 
-    // Rzutowanie
-    final list = (data as List<dynamic>).cast<Map<String, dynamic>>();
+  List<Score> get scores => _scores;
+  bool get isLoading => _isLoading;
 
-    _entries = list
-        .map((item) => LeaderboardEntry.fromMap(item))
-        .toList();
+  Future<void> fetchLeaderboard() async {
+    _isLoading = true;
+    notifyListeners();
 
+    _scores = await _scoreService.getLeaderboard();
+
+    _isLoading = false;
     notifyListeners();
   }
 }
