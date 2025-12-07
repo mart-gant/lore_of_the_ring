@@ -1,23 +1,25 @@
 
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AnswerService {
-  final SupabaseClient client = Supabase.instance.client;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> saveAnswer({
     required String questionId,
     required int selectedIndex,
     required bool isCorrect,
   }) async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) throw Exception('Brak zalogowanego użytkownika');
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) throw Exception('User not logged in');
 
-    await client.from('answers').insert({
+    await _firestore.collection('answers').add({
       'user_id': userId,
       'question_id': questionId,
       'selected_index': selectedIndex,
       'is_correct': isCorrect,
-      'timestamp': DateTime.now().toIso8601String(),
+      'timestamp': FieldValue.serverTimestamp(),
     });
   }
 }

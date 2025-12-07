@@ -1,16 +1,15 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:lore_of_the_ring/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lore_of_the_ring/services/firebase_auth_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  final AuthService _authService;
-  late final StreamSubscription<AuthState> _authStateSubscription;
+  final FirebaseAuthService _authService;
+  late final StreamSubscription<User?> _authStateSubscription;
 
   AuthViewModel(this._authService) {
-    _authStateSubscription = _authService.authStateChanges.listen((data) {
-      final User? user = data.session?.user;
+    _authStateSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
       _user = user;
       notifyListeners();
     });
@@ -22,11 +21,11 @@ class AuthViewModel extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
 
   Future<void> signUp(String email, String password) async {
-    await _authService.signUp(email, password);
+    await _authService.registerWithEmailAndPassword(email, password);
   }
 
   Future<void> signIn(String email, String password) async {
-    await _authService.signIn(email, password);
+    await _authService.signInWithEmailAndPassword(email, password);
   }
 
   Future<void> signOut() async {

@@ -58,7 +58,7 @@ class QuizViewModel extends ChangeNotifier {
 
   Future<void> _saveCurrentScore() async {
     if (_authViewModel.isLoggedIn) {
-      await _scoreService.saveScore(_score, _authViewModel.user!.id);
+      await _scoreService.saveScore(_score, _authViewModel.user!.uid);
     }
   }
 

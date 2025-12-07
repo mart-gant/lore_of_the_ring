@@ -109,9 +109,9 @@ class QuizScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            color: AppTheme.parchment.withOpacity(0.8),
+            color: AppTheme.parchment.withAlpha(204),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.darkWood.withOpacity(0.5)),
+            border: Border.all(color: AppTheme.darkWood.withAlpha(128)),
           ),
           child: Text(
             question.questionText,
@@ -128,7 +128,7 @@ class QuizScreen extends StatelessWidget {
               child: Text(option),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

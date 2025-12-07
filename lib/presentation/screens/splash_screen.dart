@@ -17,35 +17,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
+    _navigateToNextScreen();
+  }
 
-      // Listen to auth changes
-      authViewModel.addListener(() {
-        if (authViewModel.isLoggedIn) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const QuizScreen()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
-        }
-      });
+  Future<void> _navigateToNextScreen() async {
+    // Wait for a bit
+    await Future.delayed(const Duration(seconds: 2));
 
-      // Initial check
-      Future.delayed(const Duration(seconds: 2), () {
-        if (authViewModel.isLoggedIn) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const QuizScreen()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
-        }
-      });
-    });
+    // Check if the widget is still in the tree.
+    if (!mounted) return;
+
+    final authViewModel = context.read<AuthViewModel>();
+
+    if (authViewModel.isLoggedIn) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const QuizScreen()),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
   }
 
   @override

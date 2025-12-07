@@ -1,25 +1,22 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lore_of_the_ring/domain/models/question.dart';
-import 'package:lore_of_the_ring/services/supabase_service.dart';
 
 class QuestionService {
-  final SupabaseService _supabaseService;
-
-  QuestionService(this._supabaseService);
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<Question>> getQuestions() async {
     try {
-      final response = await _supabaseService.client.from('questions').select();
+      final snapshot = await _firestore.collection('questions').get();
 
-      if (response.isEmpty) {
+      if (snapshot.docs.isEmpty) {
         return [];
       }
-      
-      final questions = response.map((json) => Question.fromJson(json)).toList();
+
+      final questions = snapshot.docs.map((doc) => Question.fromJson(doc.data())).toList();
       return questions;
     } catch (e) {
       // You might want to handle errors more gracefully
-      print('Error fetching questions: $e');
       return [];
     }
   }

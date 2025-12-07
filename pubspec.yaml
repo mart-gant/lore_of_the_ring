@@ -1,5 +1,5 @@
 name: lore_of_the_ring
-description: A Middle-earth-inspired quiz app using Flutter and Supabase.
+description: A Middle-earth-inspired quiz app using Flutter and Firebase.
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,23 +11,25 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Supabase SDK
-  supabase_flutter: ^2.3.2
+  # Firebase SDK
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
 
-  # Routing (opcjonalnie użyj go_router lub auto_route)
+  # Routing
   go_router: ^13.2.1
 
-  # Stan (można zmienić na Riverpod lub Bloc w przyszłości)
+  # State Management
   provider: ^6.1.2
 
   # UI
   cupertino_icons: ^1.0.6
 
-  # Animacje / motyw Tolkiena (opcjonalnie)
+  # Animations / Tolkien theme
   lottie: ^2.7.0
   google_fonts: ^6.2.1
 
-  # Formatowanie dat
+  # Date formatting
   intl: ^0.18.1
 
 dev_dependencies:

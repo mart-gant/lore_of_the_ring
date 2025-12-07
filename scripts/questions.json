@@ -1,0 +1,18 @@
+
+[
+  {
+    "questionText": "Kto był pierwszym królem Gondoru?",
+    "options": ["Elendil", "Isildur", "Anárion", "Aragorn"],
+    "correctAnswer": "Elendil"
+  },
+  {
+    "questionText": "Jak nazywała się twierdza Saurona w Mordorze?",
+    "options": ["Minas Tirith", "Barad-dûr", "Orthanc", "Helm's Deep"],
+    "correctAnswer": "Barad-dûr"
+  },
+  {
+    "questionText": "Kto zniszczył Jedyny Pierścień?",
+    "options": ["Frodo Baggins", "Samwise Gamgee", "Gollum", "Aragorn"],
+    "correctAnswer": "Gollum"
+  }
+]
